@@ -13,7 +13,7 @@ const newline = 0x0a
 // It flushes whenever a newline (0x0a, \n) is detected.
 //
 // The bufio.Writer struct wraps a writer and buffers its
-// output. Howveer, it only does this batched write when the
+// output. However, it only does this batched write when the
 // internal buffer fills. Sometimes, you'd prefer to write
 // each line as it's completed, rather than the entire buffer
 // at once. Enter LineWriter. It does exactly that.
@@ -45,15 +45,18 @@ func New(w io.Writer) *LineWriter {
 func (l *LineWriter) Write(p []byte) (n int, err error) {
 	lower := 0
 
-	flush := func(upper int) error {
+	passthrough := func(upper int, flush bool) error {
 		written, err := l.buffer.Write(p[lower:upper])
 		n += written
 		if err != nil {
 			return err
 		}
-		err = l.buffer.Flush()
-		if err != nil {
-			return err
+
+		if flush {
+			err = l.buffer.Flush()
+			if err != nil {
+				return err
+			}
 		}
 
 		lower = upper
@@ -62,7 +65,7 @@ func (l *LineWriter) Write(p []byte) (n int, err error) {
 
 	for i, b := range p {
 		if b == newline {
-			err = flush(i + 1)
+			err = passthrough(i+1, true)
 			if err != nil {
 				return
 			}
@@ -70,7 +73,7 @@ func (l *LineWriter) Write(p []byte) (n int, err error) {
 	}
 
 	if lower < len(p) {
-		err = flush(len(p))
+		err = passthrough(len(p), false)
 	}
 	return
 }

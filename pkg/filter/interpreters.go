@@ -73,10 +73,10 @@ type RequiredFieldsInterpreter struct {
 	Defaults map[string]interface{}
 }
 
-var _ Interpreter = (*RequiredFieldsInterpreter)(nil)
+var _ Interpreter = RequiredFieldsInterpreter{}
 
 // Interpret implements Interpreter for RequiredFieldsInterpreter
-func (i *RequiredFieldsInterpreter) Interpret(data []byte,
+func (i RequiredFieldsInterpreter) Interpret(data []byte,
 	fields map[string]interface{}) ([]byte, map[string]interface{}) {
 	for k, v := range i.Defaults {
 		fields[k] = v
@@ -96,10 +96,10 @@ type TendermintInterpreter struct {
 // NewTendermintInterpreter constructs a TendermintInterpreter with the
 // one field that is currently worth searching: _msg
 func NewTendermintInterpreter() Interpreter {
-	return &TendermintInterpreter{Keys: []string{"_msg"}}
+	return TendermintInterpreter{Keys: []string{"_msg"}}
 }
 
-var _ Interpreter = (*TendermintInterpreter)(nil)
+var _ Interpreter = TendermintInterpreter{}
 
 func findFields(v string, fields map[string]interface{}) map[string]interface{} {
 	// pattern for matching lines that have Key: value as long as that line doesn't end in curly brace.
@@ -124,7 +124,7 @@ func findFields(v string, fields map[string]interface{}) map[string]interface{} 
 }
 
 // Interpret implements Interpreter for TendermintInterpreter
-func (i *TendermintInterpreter) Interpret(data []byte,
+func (i TendermintInterpreter) Interpret(data []byte,
 	fields map[string]interface{}) ([]byte, map[string]interface{}) {
 	for _, k := range i.Keys {
 		v, ok := fields[k]
@@ -148,10 +148,10 @@ func (i *TendermintInterpreter) Interpret(data []byte,
 // pid:role timestamp loglevel message
 type RedisInterpreter struct{}
 
-var _ Interpreter = (*RedisInterpreter)(nil)
+var _ Interpreter = RedisInterpreter{}
 
 // Interpret implements Interpreter for RedisInterpreter
-func (i *RedisInterpreter) Interpret(data []byte,
+func (i RedisInterpreter) Interpret(data []byte,
 	fields map[string]interface{}) ([]byte, map[string]interface{}) {
 	pat := regexp.MustCompile("^([0-9]+):([XCSM]) " +
 		"([0-9]+ [A-Za-z]+ [0-9]+ [0-9:.]+) ([.*#-]) (.*)$")

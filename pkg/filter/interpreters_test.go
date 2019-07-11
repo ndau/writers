@@ -9,7 +9,7 @@ import (
 )
 
 func TestJSONInterpreter_Interpret(t *testing.T) {
-	r := &JSONInterpreter{}
+	r := JSONInterpreter{}
 
 	tests := []struct {
 		name    string
@@ -40,7 +40,7 @@ func TestJSONInterpreter_Interpret(t *testing.T) {
 }
 
 func TestLastChanceInterpreter_Interpret(t *testing.T) {
-	r := &LastChanceInterpreter{
+	r := LastChanceInterpreter{
 		Escaper: func(data []byte) string { return hex.EncodeToString(data) },
 	}
 
@@ -70,7 +70,7 @@ func TestLastChanceInterpreter_Interpret(t *testing.T) {
 }
 
 func TestRequiredFieldsInterpreterBasic(t *testing.T) {
-	r := &RequiredFieldsInterpreter{
+	r := RequiredFieldsInterpreter{
 		Defaults: map[string]interface{}{
 			"a": 1,
 			"b": "buzz",
@@ -118,7 +118,7 @@ var sampleTmLogs = `
 
 func TestTendermintInterpreter_Interpret(t *testing.T) {
 	r := NewTendermintInterpreter()
-	j := &JSONInterpreter{}
+	j := JSONInterpreter{}
 	expected := []string{
 		"_msg", "level", "module",
 	}
@@ -155,7 +155,7 @@ func TestTendermintInterpreter_Interpret(t *testing.T) {
 }
 
 func TestRedisInterpreterBasic(t *testing.T) {
-	r := &RedisInterpreter{}
+	r := RedisInterpreter{}
 	emptyf := make(map[string]interface{})
 	expected := []string{
 		"pid", "role", "timestamp", "level", "msg",
@@ -210,7 +210,7 @@ var sampleRedisLogs = `
 `
 
 func TestRedisInterpreterReal(t *testing.T) {
-	r := &RedisInterpreter{}
+	r := RedisInterpreter{}
 	f := make(map[string]interface{})
 	expected := []string{
 		"pid", "role", "timestamp", "level", "msg",

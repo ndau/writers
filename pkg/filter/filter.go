@@ -50,11 +50,13 @@ func NewFilter(splitter bufio.SplitFunc, output func(map[string]interface{}), do
 					}
 				}
 				data := scanner.Bytes()
-				fields := map[string]interface{}{}
-				for _, i := range fp.Interpreters {
-					data, fields = i.Interpret(data, fields)
+				if len(data) > 0 {
+					fields := map[string]interface{}{}
+					for _, i := range fp.Interpreters {
+						data, fields = i.Interpret(data, fields)
+					}
+					output(fields)
 				}
-				output(fields)
 			}
 		}
 

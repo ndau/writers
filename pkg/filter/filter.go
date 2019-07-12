@@ -45,7 +45,7 @@ func NewFilter(splitter bufio.SplitFunc, output func(map[string]interface{}), do
 			case <-fp.cbuf.C:
 				if !scanner.Scan() {
 					// if the scanner fails, emit a standard message to the output
-					if err := scanner.Err(); err != nil {
+					if err := scanner.Err(); err != nil && err != io.ErrNoProgress {
 						output(map[string]interface{}{"module": "filter", "level": "error", "error": err.Error()})
 					}
 				}

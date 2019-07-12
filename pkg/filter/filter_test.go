@@ -77,5 +77,32 @@ func TestJSONFilter_Basic(t *testing.T) {
 	for n := 0; n < 10; n++ {
 		assert.Equal(t, 5, len(ma[n]))
 	}
+}
 
+func TestErrNoProgress(t *testing.T) {
+	outputter := func(m map[string]interface{}) {
+		// The "error" used to contain io.ErrNoProgress.  Here we are intolerant of any error.
+		if e, ok := m["error"]; ok {
+			assert.FailNow(t, "scanner error", e)
+		}
+	}
+	filter := NewFilter(JSONSplit, outputter, nil, JSONInterpreter{})
+
+	// Do multiple zero-byte Write()s to make the Scan() in NewFilter() output an error.
+	for i := 0; i < 10; i++ {
+		// Put something in the buffer.  addLen() will send it through the "C" channel.
+		n1, err1 := filter.Write([]byte("x"))
+
+		// Call Write() again to send more through the channel, but w/o offering more data.
+		n2, err2 := filter.Write([]byte(""))
+
+		// Make the above happen as quickly as possible to stress the scanner; assert after.
+		assert.Nil(t, err1)
+		assert.Equal(t, 1, n1)
+		assert.Nil(t, err2)
+		assert.Equal(t, 0, n2)
+
+		// Give some cycles to the scanner go routine so it can process the above writes.
+		time.Sleep(5 * time.Millisecond)
+	}
 }

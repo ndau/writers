@@ -2,6 +2,7 @@ package filter
 
 import (
 	"bufio"
+	"encoding/json"
 	"io"
 	"sync"
 	"testing"
@@ -105,4 +106,78 @@ func TestErrNoProgress(t *testing.T) {
 		// Give some cycles to the scanner go routine so it can process the above writes.
 		time.Sleep(5 * time.Millisecond)
 	}
+}
+
+func TestEmptyData(t *testing.T) {
+	outputter := func(m map[string]interface{}) {
+		if len(m) == 0 {
+			assert.FailNow(t, "empty map found", m)
+		}
+	}
+	filter := NewFilter(JSONSplit, outputter, nil, JSONInterpreter{})
+
+	for i := 0; i < 10; i++ {
+		// Put something in the buffer.  addLen() will send it through the "C" channel.
+		n1, err1 := filter.Write([]byte("x"))
+
+		// Call Write() again to send more through the channel, but w/o offering more data.
+		n2, err2 := filter.Write([]byte(""))
+
+		// Make the above happen as quickly as possible to stress the scanner; assert after.
+		assert.Nil(t, err1)
+		assert.Equal(t, 1, n1)
+		assert.Nil(t, err2)
+		assert.Equal(t, 0, n2)
+
+		// Give some cycles to the scanner go routine so it can process the above writes.
+		time.Sleep(5 * time.Millisecond)
+	}
+}
+
+func TestJSONAllAtOnce(t *testing.T) {
+	j := buildJSON(5)
+
+	outputter := func(m map[string]interface{}) {
+		p, err := json.Marshal(m)
+		assert.Nil(t, err)
+		assert.Equal(t, j, p)
+		j = nil
+	}
+	filter := NewFilter(JSONSplit, outputter, nil, JSONInterpreter{})
+
+	// Write j all at once.
+	filter.Write(j)
+
+	// Give the scanner a second to process the json.
+	time.Sleep(1 * time.Second)
+
+	// Make sure the outputter was called.
+	assert.Nil(t, j)
+}
+
+func TestJSONInPieces(t *testing.T) {
+	j := buildJSON(5)
+
+	outputter := func(m map[string]interface{}) {
+		p, err := json.Marshal(m)
+		assert.Nil(t, err)
+		assert.Equal(t, j, p)
+		j = nil
+	}
+	filter := NewFilter(JSONSplit, outputter, nil, JSONInterpreter{})
+
+	// Write j in pieces.
+	b := []byte("x")
+	for i := 0; i < len(j); i++ {
+		b[0] = j[i]
+		n, err := filter.Write(b)
+		assert.Nil(t, err)
+		assert.Equal(t, 1, n)
+	}
+
+	// Give the scanner a second to process the json.
+	time.Sleep(1 * time.Second)
+
+	// Make sure the outputter was called.
+	assert.Nil(t, j)
 }

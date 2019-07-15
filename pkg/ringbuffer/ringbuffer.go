@@ -150,10 +150,11 @@ func (c *RingBuffer) addLen(n int) {
 	// when we set the length, if it's nonzero, send the value on
 	// the channel, but don't block if the channel is already full
 	if c.len != 0 && !c.closed {
-		select {
-		case c.C <- struct{}{}:
-		default:
-		}
+		go func() {
+			select {
+			case c.C <- struct{}{}:
+			}
+		}()
 	}
 }
 

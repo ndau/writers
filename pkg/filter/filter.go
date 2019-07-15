@@ -43,22 +43,19 @@ func NewFilter(splitter bufio.SplitFunc, output func(map[string]interface{}), do
 				// just shut down
 				return
 			case <-fp.cbuf.C:
-				for {
-					if !scanner.Scan() {
-						// if the scanner fails, emit a standard message to the output
-						if err := scanner.Err(); err != nil && err != io.ErrNoProgress {
-							output(map[string]interface{}{"module": "filter", "level": "error", "error": err.Error()})
-						}
+				if !scanner.Scan() {
+					// if the scanner fails, emit a standard message to the output
+					if err := scanner.Err(); err != nil && err != io.ErrNoProgress {
+						output(map[string]interface{}{"module": "filter", "level": "error", "error": err.Error()})
 					}
 					data := scanner.Bytes()
-					if len(data) == 0 {
-						break
+					if len(data) != 0 {
+						fields := map[string]interface{}{}
+						for _, i := range fp.Interpreters {
+							data, fields = i.Interpret(data, fields)
+						}
+						output(fields)
 					}
-					fields := map[string]interface{}{}
-					for _, i := range fp.Interpreters {
-						data, fields = i.Interpret(data, fields)
-					}
-					output(fields)
 				}
 			}
 		}

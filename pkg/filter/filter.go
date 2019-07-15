@@ -48,14 +48,14 @@ func NewFilter(splitter bufio.SplitFunc, output func(map[string]interface{}), do
 					if err := scanner.Err(); err != nil && err != io.ErrNoProgress {
 						output(map[string]interface{}{"module": "filter", "level": "error", "error": err.Error()})
 					}
-					data := scanner.Bytes()
-					if len(data) != 0 {
-						fields := map[string]interface{}{}
-						for _, i := range fp.Interpreters {
-							data, fields = i.Interpret(data, fields)
-						}
-						output(fields)
+				}
+				data := scanner.Bytes()
+				if len(data) != 0 {
+					fields := map[string]interface{}{}
+					for _, i := range fp.Interpreters {
+						data, fields = i.Interpret(data, fields)
 					}
+					output(fields)
 				}
 			}
 		}

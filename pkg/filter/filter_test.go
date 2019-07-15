@@ -134,7 +134,7 @@ func TestEmptyData(t *testing.T) {
 	}
 }
 
-func TestJSONAllAtOnce(t *testing.T) {
+func TestSingleJSON(t *testing.T) {
 	j := buildJSON(5)
 
 	outputter := func(m map[string]interface{}) {
@@ -144,8 +144,6 @@ func TestJSONAllAtOnce(t *testing.T) {
 		j = nil
 	}
 	filter := NewFilter(JSONSplit, outputter, nil, JSONInterpreter{})
-
-	// Write j all at once.
 	filter.Write(j)
 
 	// Give the scanner a second to process the json.
@@ -155,31 +153,29 @@ func TestJSONAllAtOnce(t *testing.T) {
 	assert.Nil(t, j)
 }
 
-/* TODO: Uncomment this if it's supported; remove it if it's not.
-func TestJSONInPieces(t *testing.T) {
-	j := buildJSON(5)
+func TestDoubleJSON(t *testing.T) {
+	j1 := buildJSON(5)
+	j2 := buildJSON(5)
+	count := 0
 
 	outputter := func(m map[string]interface{}) {
 		p, err := json.Marshal(m)
 		assert.Nil(t, err)
-		assert.Equal(t, j, p)
-		j = nil
+		if count == 0 {
+			assert.Equal(t, j1, p)
+		} else {
+			assert.Equal(t, j2, p)
+		}
+		count++
 	}
 	filter := NewFilter(JSONSplit, outputter, nil, JSONInterpreter{})
-
-	// Write j in pieces.
-	b := []byte("x")
-	for i := 0; i < len(j); i++ {
-		b[0] = j[i]
-		n, err := filter.Write(b)
-		assert.Nil(t, err)
-		assert.Equal(t, 1, n)
-	}
+	filter.Write(j1)
+	//time.Sleep(5 * time.Millisecond)
+	filter.Write(j2)
 
 	// Give the scanner a second to process the json.
 	time.Sleep(1 * time.Second)
 
-	// Make sure the outputter was called.
-	assert.Nil(t, j)
+	// Make sure the outputter was called as many times as we expected.
+	assert.Equal(t, 2, count)
 }
-*/

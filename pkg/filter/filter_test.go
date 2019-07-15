@@ -135,9 +135,12 @@ func TestEmptyData(t *testing.T) {
 }
 
 func TestSingleJSON(t *testing.T) {
+	mut := sync.Mutex{}
 	j := buildJSON(5)
 
 	outputter := func(m map[string]interface{}) {
+		mut.Lock()
+		defer mut.Unlock()
 		p, err := json.Marshal(m)
 		assert.Nil(t, err)
 		assert.Equal(t, j, p)
@@ -150,15 +153,20 @@ func TestSingleJSON(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	// Make sure the outputter was called.
+	mut.Lock()
 	assert.Nil(t, j)
+	mut.Unlock()
 }
 
 func TestDoubleJSON(t *testing.T) {
 	j1 := buildJSON(5)
 	j2 := buildJSON(5)
 	count := 0
+	mut := sync.Mutex{}
 
 	outputter := func(m map[string]interface{}) {
+		mut.Lock()
+		defer mut.Unlock()
 		p, err := json.Marshal(m)
 		assert.Nil(t, err)
 		if count == 0 {
@@ -170,12 +178,14 @@ func TestDoubleJSON(t *testing.T) {
 	}
 	filter := NewFilter(JSONSplit, outputter, nil, JSONInterpreter{})
 	filter.Write(j1)
-	//time.Sleep(5 * time.Millisecond)
+	time.Sleep(5 * time.Millisecond)
 	filter.Write(j2)
 
 	// Give the scanner a second to process the json.
 	time.Sleep(1 * time.Second)
 
 	// Make sure the outputter was called as many times as we expected.
+	mut.Lock()
 	assert.Equal(t, 2, count)
+	mut.Unlock()
 }

@@ -44,7 +44,7 @@ var _ io.ReadWriteCloser = (*RingBuffer)(nil)
 // shrinks.
 func New(capacity int) *RingBuffer {
 	return &RingBuffer{
-		C:     make(chan struct{}, 1),
+		C:     make(chan struct{}, 10),
 		buf:   make([]byte, capacity),
 		len:   0,
 		index: 0,

@@ -71,11 +71,15 @@ func TestJSONFilter_Basic(t *testing.T) {
 	}()
 
 	wg.Wait()
+
+	// Give the scanner a second to process the json.
+	time.Sleep(1 * time.Second)
+
 	close(done)
 	mutex.Lock()
 	defer mutex.Unlock()
 	assert.Equal(t, 10, len(ma))
-	for n := 0; n < 10; n++ {
+	for n := 0; n < len(ma); n++ {
 		assert.Equal(t, 5, len(ma[n]))
 	}
 }
@@ -178,7 +182,6 @@ func TestDoubleJSON(t *testing.T) {
 	}
 	filter := NewFilter(JSONSplit, outputter, nil, JSONInterpreter{})
 	filter.Write(j1)
-	time.Sleep(5 * time.Millisecond)
 	filter.Write(j2)
 
 	// Give the scanner a second to process the json.

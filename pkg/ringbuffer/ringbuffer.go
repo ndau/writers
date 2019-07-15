@@ -3,6 +3,7 @@ package ringbuffer
 import (
 	"io"
 	"sync"
+	"time"
 )
 
 // RingBuffer is an io.ReadWriter that implements a...you guessed it, ring
@@ -44,7 +45,7 @@ var _ io.ReadWriteCloser = (*RingBuffer)(nil)
 // shrinks.
 func New(capacity int) *RingBuffer {
 	return &RingBuffer{
-		C:     make(chan struct{}, 10),
+		C:     make(chan struct{}, 1),
 		buf:   make([]byte, capacity),
 		len:   0,
 		index: 0,
@@ -70,7 +71,7 @@ func (c *RingBuffer) Write(p []byte) (int, error) {
 	startWritingAt := (c.index + c.len) % len(c.buf)
 	leftBeforeEnd := len(c.buf) - startWritingAt
 	n := 0
-	if len(p) < leftBeforeEnd {
+	if len(p) <= leftBeforeEnd {
 		// it all fits in before it's time to wrap
 		n = copy(c.buf[startWritingAt:], p)
 	} else {
@@ -90,6 +91,11 @@ func (c *RingBuffer) Read(p []byte) (int, error) {
 	n, err := c.peek(p)
 	if err != nil {
 		return n, err
+	}
+	if n == 0 {
+		// Scan() calls Read() repeatedly in a tight loop, preventing Write()s from filling the
+		// ring buffer.  Relinquish some cycles to allow this to happen.
+		time.Sleep(1 * time.Millisecond)
 	}
 	return c.consume(n), nil
 }

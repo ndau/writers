@@ -85,6 +85,22 @@ func TestRingBufferWrap(t *testing.T) {
 	assert.Equal(t, "bbbcccc", string(b))
 }
 
+func TestRingBufferPerfectlyFit(t *testing.T) {
+	// create one and check its initial state
+	c := New(10)
+	// now write 5 bytes to it
+	n, err := c.Write([]byte("aaaaa"))
+	assert.Nil(t, err)
+	// write 5 more bytes to it
+	n, err = c.Write([]byte("bbbbb"))
+	assert.Nil(t, err)
+	b := make([]byte, 10)
+	n, err = c.Read(b)
+	assert.Nil(t, err)
+	assert.Equal(t, 10, n)
+	assert.Equal(t, "aaaaabbbbb", string(b))
+}
+
 func TestRingBufferRepeat(t *testing.T) {
 	c := New(100)
 	// create data that's relatively prime to the buffer length (it's 17 bytes)

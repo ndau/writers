@@ -198,14 +198,14 @@ func TestTendermintJSON(t *testing.T) {
 	count := 0
 
 	interpreters := []Interpreter{
-		JSONInterpreter{},
-		NewTendermintInterpreter(),
 		RequiredFieldsInterpreter{
 			Defaults: map[string]interface{}{
 				"bin":     "tendermint",
 				"node_id": "mainnet-0",
 			},
 		},
+		JSONInterpreter{},
+		NewTendermintInterpreter(),
 		LastChanceInterpreter{},
 	}
 

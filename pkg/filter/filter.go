@@ -34,8 +34,7 @@ func NewFilter(splitter bufio.SplitFunc, output func(map[string]interface{}), do
 	}
 
 	go func() {
-		scanner := bufio.NewScanner(fp.cbuf)
-		scanner.Split(splitter)
+		scanner := bufio.NewScanner(fp.cbuf, splitter)
 
 		for {
 			select {

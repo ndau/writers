@@ -26,8 +26,7 @@ func TestJSONSplitWithBuffer(t *testing.T) {
 		c.Close()
 	}()
 
-	scanner := bufio.NewScanner(c)
-	scanner.Split(JSONSplit)
+	scanner := bufio.NewScanner(c, JSONSplit)
 outer:
 	for {
 		select {
@@ -72,8 +71,8 @@ func TestJSONFilter_Basic(t *testing.T) {
 
 	wg.Wait()
 
-	// Give the scanner a second to process the json.
-	time.Sleep(1 * time.Second)
+	// Give the scanner some time to process the json.
+	time.Sleep(500 * time.Millisecond)
 
 	close(done)
 	mutex.Lock()
@@ -153,8 +152,8 @@ func TestSingleJSON(t *testing.T) {
 	filter := NewFilter(JSONSplit, outputter, nil, JSONInterpreter{})
 	filter.Write(j)
 
-	// Give the scanner a second to process the json.
-	time.Sleep(1 * time.Second)
+	// Give the scanner some time to process the json.
+	time.Sleep(500 * time.Millisecond)
 
 	// Make sure the outputter was called.
 	mut.Lock()
@@ -184,8 +183,8 @@ func TestDoubleJSON(t *testing.T) {
 	filter.Write(j1)
 	filter.Write(j2)
 
-	// Give the scanner a second to process the json.
-	time.Sleep(1 * time.Second)
+	// Give the scanner some time to process the json.
+	time.Sleep(500 * time.Millisecond)
 
 	// Make sure the outputter was called as many times as we expected.
 	mut.Lock()

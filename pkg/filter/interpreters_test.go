@@ -116,20 +116,40 @@ var sampleTmLogs = `
 {"_msg":"Indexed block","height":2,"level":"info","module":"txindex"}
 `
 
+var sampleTmLogsExtraFields = `
+{"_msg":"Block{\n  Header{\n    Version:        {10 0}\n    ChainID:        localnet\n    Height:         2\n    Time:           2019-04-27 01:13:43.232704 +0000 UTC\n    NumTxs:         0\n    TotalTxs:       1\n    LastBlockID:    528F0CCA2BC8CE9FDAD1394BDCBCF544B69961845DF80847B8DFED5E3EA3C59A:1:3BD8D1307A95\n    LastCommit:     4765C8140D5F6D1E463DD3185CA3C468E7D1B7CCC41C37DAE6B60669AE856D0C\n    Data:           \n    Validators:     D736B1878F42508E2535F245CE040E793368FFA8331D9685C44A28B13C831C18\n    NextValidators: D736B1878F42508E2535F245CE040E793368FFA8331D9685C44A28B13C831C18\n    App:            457BAB38A80A871BCF08AB0154232F7B2021AB58\n    Consensus:       048091BC7DDC283F77BFBF91D73C44DA58C3DF8A9CBC867405D8B7F3DAADA22F\n    Results:        6E340B9CFFB37A989CA544E6BB780A2C78901D3FB33738768511A30617AFA01D\n    Evidence:       \n    Proposer:       497B1D7E8CD2C6D43C9326145E6C3819179EFE9E\n  }#F4006F1F2544906BC057B8AEFB1B5305264605F1456D78B5DC48C66D84823BBD\n  Data{\n    \n  }#\n  EvidenceData{\n    \n  }#\n  Commit{\n    BlockID:    528F0CCA2BC8CE9FDAD1394BDCBCF544B69961845DF80847B8DFED5E3EA3C59A:1:3BD8D1307A95\n    Precommits:\n      Vote{0:2D0AA78150B6 1/00/2(Precommit) 528F0CCA2BC8 9B76B58D8E6E @ 2019-04-27T01:13:43.336014Z}\n      Vote{1:497B1D7E8CD2 1/00/2(Precommit) 528F0CCA2BC8 D932148F1631 @ 2019-04-27T01:13:43.232704Z}\n  }#4765C8140D5F6D1E463DD3185CA3C468E7D1B7CCC41C37DAE6B60669AE856D0C\n}#F4006F1F2544906BC057B8AEFB1B5305264605F1456D78B5DC48C66D84823BBD","level":"info","module":"consensus"}
+`
+
 func TestTendermintInterpreter_Interpret(t *testing.T) {
-	r := NewTendermintInterpreter()
-	j := JSONInterpreter{}
 	expected := []string{
 		"_msg", "level", "module",
 	}
+	testTendermintInterpreter(t, sampleTmLogs, expected)
+}
 
-	for _, line := range strings.Split(sampleTmLogs, "\n") {
+func TestTendermintInterpreter_InterpretExtraFields(t *testing.T) {
+	expected := []string{
+		// Standard tendermint fields.
+		"_msg", "level", "module",
+		// Embedded fields.
+		"App", "BlockID", "ChainID", "Consensus", "Height", "LastBlockID",
+		"LastCommit", "NextValidators", "NumTxs", "Proposer", "Results",
+		"Time", "TotalTxs", "Validators", "Version",
+	}
+	testTendermintInterpreter(t, sampleTmLogsExtraFields, expected)
+}
+
+func testTendermintInterpreter(t *testing.T, logs string, expected []string) {
+	r := NewTendermintInterpreter()
+	j := JSONInterpreter{}
+
+	for _, line := range strings.Split(logs, "\n") {
+		if len(line) == 0 {
+			continue
+		}
 		f := make(map[string]interface{})
 		gotbytes, gotfields := j.Interpret([]byte(line), f)
 		gotbytes, gotfields = r.Interpret(gotbytes, gotfields)
-		if len(gotbytes) == 0 && len(gotfields) == 0 {
-			continue
-		}
 		if len(gotbytes) != 0 {
 			t.Errorf("TendermintInterpreter.Interpret() got = %v, expected nothing", gotbytes)
 		}

@@ -140,6 +140,7 @@ func TestEmptyData(t *testing.T) {
 func TestSingleJSON(t *testing.T) {
 	mut := sync.Mutex{}
 	j := buildJSON(5)
+	count := 0
 
 	outputter := func(m map[string]interface{}) {
 		mut.Lock()
@@ -147,7 +148,7 @@ func TestSingleJSON(t *testing.T) {
 		p, err := json.Marshal(m)
 		assert.Nil(t, err)
 		assert.Equal(t, j, p)
-		j = nil
+		count++
 	}
 	filter := NewFilter(JSONSplit, outputter, nil, JSONInterpreter{})
 	filter.Write(j)
@@ -157,15 +158,15 @@ func TestSingleJSON(t *testing.T) {
 
 	// Make sure the outputter was called.
 	mut.Lock()
-	assert.Nil(t, j)
+	assert.Equal(t, 1, count)
 	mut.Unlock()
 }
 
 func TestDoubleJSON(t *testing.T) {
+	mut := sync.Mutex{}
 	j1 := buildJSON(5)
 	j2 := buildJSON(5)
 	count := 0
-	mut := sync.Mutex{}
 
 	outputter := func(m map[string]interface{}) {
 		mut.Lock()
@@ -189,5 +190,54 @@ func TestDoubleJSON(t *testing.T) {
 	// Make sure the outputter was called as many times as we expected.
 	mut.Lock()
 	assert.Equal(t, 2, count)
+	mut.Unlock()
+}
+
+func TestTendermintJSON(t *testing.T) {
+	mut := sync.Mutex{}
+	count := 0
+
+	interpreters := []Interpreter{
+		JSONInterpreter{},
+		NewTendermintInterpreter(),
+		RequiredFieldsInterpreter{
+			Defaults: map[string]interface{}{
+				"bin":     "tendermint",
+				"node_id": "mainnet-0",
+			},
+		},
+		LastChanceInterpreter{},
+	}
+
+	outputter := func(m map[string]interface{}) {
+		mut.Lock()
+		defer mut.Unlock()
+		expected := []string{
+			// Standard tendermint fields.
+			"_msg", "level", "module",
+			// Required fields.
+			"bin", "node_id",
+			// Embedded fields.
+			"App", "BlockID", "ChainID", "Consensus", "Height", "LastBlockID",
+			"LastCommit", "NextValidators", "NumTxs", "Proposer", "Results",
+			"Time", "TotalTxs", "Validators", "Version",
+		}
+		for _, e := range expected {
+			if _, ok := m[e]; !ok {
+				t.Errorf("got = %#v, expected it to have %s\n(parsing %s)", m, e, sampleTmJson)
+			}
+		}
+		count++
+	}
+
+	filter := NewFilter(JSONSplit, outputter, nil, interpreters...)
+	filter.Write([]byte(sampleTmJson))
+
+	// Give the scanner some time to process the json.
+	time.Sleep(500 * time.Millisecond)
+
+	// Make sure the outputter was called as many times as we expected.
+	mut.Lock()
+	assert.Equal(t, 1, count)
 	mut.Unlock()
 }

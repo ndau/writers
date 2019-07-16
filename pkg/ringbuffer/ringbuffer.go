@@ -97,7 +97,7 @@ func (c *RingBuffer) Read(p []byte) (int, error) {
 	return c.consume(n), nil
 }
 
-// ScannnerRead is similar to Read but returns bufio.ErrNoNewData if nothing was read.
+// ScannerRead is similar to Read but returns bufio.ErrNoNewData if nothing was read.
 func (c *RingBuffer) ScannerRead(p []byte) (int, error) {
 	n, err := c.Read(p)
 	if n == 0 && err == nil {

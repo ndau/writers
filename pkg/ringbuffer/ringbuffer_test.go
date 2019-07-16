@@ -447,7 +447,7 @@ func TestRingBufferLongRun(t *testing.T) {
 	}()
 
 	select {
-	case <-time.After(9 * time.Second):
+	case <-time.After(5 * time.Second):
 		close(done)
 	}
 

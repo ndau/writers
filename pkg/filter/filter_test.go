@@ -1,13 +1,13 @@
 package filter
 
 import (
-	"bufio"
 	"encoding/json"
 	"io"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/oneiro-ndev/writers/pkg/bufio"
 	"github.com/oneiro-ndev/writers/pkg/ringbuffer"
 	"github.com/stretchr/testify/assert"
 )

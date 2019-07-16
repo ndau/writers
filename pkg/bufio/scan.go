@@ -2,6 +2,9 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// NDEV: This file was adapted from https://golang.org/src/bufio/scan.go
+// Changes from the original source are marked with "NDEV" in comments throughout the file.
+
 package bufio
 
 import (
@@ -10,6 +13,11 @@ import (
 	"io"
 	"unicode/utf8"
 )
+
+// NDEV: Added this interface to avoid making RingBuffer.Read() behave in a non-standard way.
+type ScannerReader interface {
+	ScannerRead(p []byte) (int, error)
+}
 
 // Scanner provides a convenient interface for reading data such as
 // a file of newline-delimited lines of text. Successive calls to
@@ -28,17 +36,17 @@ import (
 // on a reader, should use bufio.Reader instead.
 //
 type Scanner struct {
-	r            io.Reader // The reader provided by the client.
-	split        SplitFunc // The function to split the tokens.
-	maxTokenSize int       // Maximum size of a token; modified by tests.
-	token        []byte    // Last token returned by split.
-	buf          []byte    // Buffer used as argument to split.
-	start        int       // First non-processed byte in buf.
-	end          int       // End of data in buf.
-	err          error     // Sticky error.
-	empties      int       // Count of successive empty tokens.
-	scanCalled   bool      // Scan has been called; buffer is in use.
-	done         bool      // Scan has finished.
+	r            ScannerReader // The reader provided by the client. // NDEV: Was io.Reader.
+	split        SplitFunc     // The function to split the tokens.
+	maxTokenSize int           // Maximum size of a token; modified by tests.
+	token        []byte        // Last token returned by split.
+	buf          []byte        // Buffer used as argument to split.
+	start        int           // First non-processed byte in buf.
+	end          int           // End of data in buf.
+	err          error         // Sticky error.
+	empties      int           // Count of successive empty tokens.
+	scanCalled   bool          // Scan has been called; buffer is in use.
+	done         bool          // Scan has finished.
 }
 
 // SplitFunc is the signature of the split function used to tokenize the
@@ -69,7 +77,12 @@ var (
 	ErrTooLong         = errors.New("bufio.Scanner: token too long")
 	ErrNegativeAdvance = errors.New("bufio.Scanner: SplitFunc returns negative advance count")
 	ErrAdvanceTooFar   = errors.New("bufio.Scanner: SplitFunc returns advance count beyond input")
+	// NDEV: Added this error.
+	ErrNoNewData = errors.New("bufio.Scanner: ScannerRead returned zero bytes")
 )
+
+// NDEV: Adapted from https://golang.org/src/bufio/bufio.go
+const maxConsecutiveEmptyReads = 100
 
 const (
 	// MaxScanTokenSize is the maximum size used to buffer a token
@@ -83,7 +96,7 @@ const (
 
 // NewScanner returns a new Scanner to read from r.
 // The split function defaults to ScanLines.
-func NewScanner(r io.Reader) *Scanner {
+func NewScanner(r ScannerReader) *Scanner { // NDEV: Function signature changed.
 	return &Scanner{
 		r:            r,
 		split:        ScanLines,
@@ -142,7 +155,9 @@ func (s *Scanner) Scan() bool {
 		// If we've run out of data but have an error, give the split function
 		// a chance to recover any remaining, possibly empty token.
 		if s.end > s.start || s.err != nil {
-			advance, token, err := s.split(s.buf[s.start:s.end], s.err != nil)
+			// NDEV: Added isNilErr variable.
+			isNilErr := s.err == nil || s.err == ErrNoNewData
+			advance, token, err := s.split(s.buf[s.start:s.end], !isNilErr)
 			if err != nil {
 				if err == ErrFinalToken {
 					s.token = token
@@ -153,11 +168,16 @@ func (s *Scanner) Scan() bool {
 				return false
 			}
 			if !s.advance(advance) {
+				// NDEV: Added this check.
+				if s.err == ErrNoNewData {
+					s.err = nil
+				}
 				return false
 			}
 			s.token = token
 			if token != nil {
-				if s.err == nil || advance > 0 {
+				if isNilErr || advance > 0 {
+					s.err = nil // NDEV: In case s.err was ErrNoNewData.
 					s.empties = 0
 				} else {
 					// Returning tokens not advancing input at EOF.
@@ -167,6 +187,10 @@ func (s *Scanner) Scan() bool {
 					}
 				}
 				return true
+			} else if s.err == ErrNoNewData {
+				// NDEV: Added this case.
+				s.err = nil
+				return false
 			}
 		}
 		// We cannot generate a token with what we are holding.
@@ -210,7 +234,7 @@ func (s *Scanner) Scan() bool {
 		// a misbehaving Reader. Officially we don't need to do this, but let's
 		// be extra careful: Scanner is for safe, simple jobs.
 		for loop := 0; ; {
-			n, err := s.r.Read(s.buf[s.end:len(s.buf)])
+			n, err := s.r.ScannerRead(s.buf[s.end:len(s.buf)]) // NDEV: Was Read().
 			s.end += n
 			if err != nil {
 				s.setErr(err)

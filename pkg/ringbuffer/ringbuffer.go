@@ -3,7 +3,8 @@ package ringbuffer
 import (
 	"io"
 	"sync"
-	"time"
+
+	"github.com/oneiro-ndev/writers/pkg/bufio"
 )
 
 // RingBuffer is an io.ReadWriter that implements a...you guessed it, ring
@@ -39,6 +40,7 @@ type RingBuffer struct {
 }
 
 var _ io.ReadWriteCloser = (*RingBuffer)(nil)
+var _ bufio.ScannerReader = (*RingBuffer)(nil)
 
 // New builds a RingBuffer of the specified initial capacity.
 // The buffer will grow if necessary to accommodate Write() calls. It never
@@ -92,12 +94,16 @@ func (c *RingBuffer) Read(p []byte) (int, error) {
 	if err != nil {
 		return n, err
 	}
-	if n == 0 {
-		// Scan() calls Read() repeatedly in a tight loop, preventing Write()s from filling the
-		// ring buffer.  Relinquish some cycles to allow this to happen.
-		time.Sleep(1 * time.Millisecond)
-	}
 	return c.consume(n), nil
+}
+
+// ScannnerRead is similar to Read but returns bufio.ErrNoNewData if nothing was read.
+func (c *RingBuffer) ScannerRead(p []byte) (int, error) {
+	n, err := c.Read(p)
+	if n == 0 && err == nil {
+		err = bufio.ErrNoNewData
+	}
+	return n, err
 }
 
 // Peek retrieves the leading bytes from the buffer but does not move the index
@@ -150,11 +156,10 @@ func (c *RingBuffer) addLen(n int) {
 	// when we set the length, if it's nonzero, send the value on
 	// the channel, but don't block if the channel is already full
 	if c.len != 0 && !c.closed {
-		go func() {
-			select {
-			case c.C <- struct{}{}:
-			}
-		}()
+		select {
+		case c.C <- struct{}{}:
+		default:
+		}
 	}
 }
 

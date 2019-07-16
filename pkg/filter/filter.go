@@ -1,9 +1,9 @@
 package filter
 
 import (
-	"bufio"
 	"io"
 
+	"github.com/oneiro-ndev/writers/pkg/bufio"
 	"github.com/oneiro-ndev/writers/pkg/ringbuffer"
 )
 
@@ -43,19 +43,17 @@ func NewFilter(splitter bufio.SplitFunc, output func(map[string]interface{}), do
 				// just shut down
 				return
 			case <-fp.cbuf.C:
-				if !scanner.Scan() {
-					// if the scanner fails, emit a standard message to the output
-					if err := scanner.Err(); err != nil && err != io.ErrNoProgress {
-						output(map[string]interface{}{"module": "filter", "level": "error", "error": err.Error()})
-					}
-				}
-				data := scanner.Bytes()
-				if len(data) != 0 {
+				for scanner.Scan() {
+					data := scanner.Bytes()
 					fields := map[string]interface{}{}
 					for _, i := range fp.Interpreters {
 						data, fields = i.Interpret(data, fields)
 					}
 					output(fields)
+				}
+				// if the scanner fails, emit a standard message to the output
+				if err := scanner.Err(); err != nil {
+					output(map[string]interface{}{"module": "filter", "level": "error", "error": err.Error()})
 				}
 			}
 		}

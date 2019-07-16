@@ -3,6 +3,8 @@ package ringbuffer
 import (
 	"io"
 	"sync"
+
+	"github.com/oneiro-ndev/writers/pkg/bufio"
 )
 
 // RingBuffer is an io.ReadWriter that implements a...you guessed it, ring
@@ -38,6 +40,7 @@ type RingBuffer struct {
 }
 
 var _ io.ReadWriteCloser = (*RingBuffer)(nil)
+var _ bufio.ScannerReader = (*RingBuffer)(nil)
 
 // New builds a RingBuffer of the specified initial capacity.
 // The buffer will grow if necessary to accommodate Write() calls. It never
@@ -70,7 +73,7 @@ func (c *RingBuffer) Write(p []byte) (int, error) {
 	startWritingAt := (c.index + c.len) % len(c.buf)
 	leftBeforeEnd := len(c.buf) - startWritingAt
 	n := 0
-	if len(p) < leftBeforeEnd {
+	if len(p) <= leftBeforeEnd {
 		// it all fits in before it's time to wrap
 		n = copy(c.buf[startWritingAt:], p)
 	} else {
@@ -92,6 +95,15 @@ func (c *RingBuffer) Read(p []byte) (int, error) {
 		return n, err
 	}
 	return c.consume(n), nil
+}
+
+// ScannerRead is similar to Read but returns bufio.ErrNoNewData if nothing was read.
+func (c *RingBuffer) ScannerRead(p []byte) (int, error) {
+	n, err := c.Read(p)
+	if n == 0 && err == nil {
+		err = bufio.ErrNoNewData
+	}
+	return n, err
 }
 
 // Peek retrieves the leading bytes from the buffer but does not move the index

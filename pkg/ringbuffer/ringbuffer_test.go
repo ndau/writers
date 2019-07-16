@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"math/rand"
+	"sync"
 	"testing"
 	"time"
 
@@ -82,6 +83,22 @@ func TestRingBufferWrap(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 7, n)
 	assert.Equal(t, "bbbcccc", string(b))
+}
+
+func TestRingBufferPerfectlyFit(t *testing.T) {
+	// create one and check its initial state
+	c := New(10)
+	// now write 5 bytes to it
+	n, err := c.Write([]byte("aaaaa"))
+	assert.Nil(t, err)
+	// write 5 more bytes to it
+	n, err = c.Write([]byte("bbbbb"))
+	assert.Nil(t, err)
+	b := make([]byte, 10)
+	n, err = c.Read(b)
+	assert.Nil(t, err)
+	assert.Equal(t, 10, n)
+	assert.Equal(t, "aaaaabbbbb", string(b))
 }
 
 func TestRingBufferRepeat(t *testing.T) {
@@ -378,4 +395,65 @@ func TestRingBufferResizeAuto(t *testing.T) {
 	n, err := c.Read(readdata)
 	assert.Nil(t, err)
 	assert.Equal(t, 300, n)
+}
+
+func TestRingBufferLongRun(t *testing.T) {
+	// this test attempts to push a bunch of random chunks through the ring buffer, with
+	// random pauses in both the send and receive sides.
+	bufsize := 500
+	c := New(bufsize)
+	sent := 0
+	received := 0
+	done := make(chan struct{})
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer c.Close()
+		for {
+			buf := make([]byte, 250+rand.Intn(500))
+			for i := 0; i < len(buf); i++ {
+				buf[i] = byte(i)
+			}
+			time.Sleep(time.Duration(rand.Intn(500)) * time.Microsecond)
+			c.Write(buf)
+			sent += len(buf)
+
+			select {
+			case <-done:
+				return
+			default:
+			}
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			buf := make([]byte, 1000)
+			n, err := c.Read(buf)
+			received += n
+			if err == io.EOF {
+				return
+			}
+			if err != nil {
+				t.Errorf("read failed with err %s", err)
+				return
+			}
+			time.Sleep(time.Duration(rand.Intn(500)) * time.Microsecond)
+		}
+	}()
+
+	select {
+	case <-time.After(5 * time.Second):
+		close(done)
+	}
+
+	wg.Wait()
+	fmt.Println(sent)
+	if sent != received {
+		t.Errorf("sent %d not equal to received %d\n", sent, received)
+	}
 }

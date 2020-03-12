@@ -13,8 +13,8 @@ package filter
 import (
 	"io"
 
-	"github.com/oneiro-ndev/writers/pkg/bufio"
-	"github.com/oneiro-ndev/writers/pkg/ringbuffer"
+	"github.com/ndau/writers/pkg/bufio"
+	"github.com/ndau/writers/pkg/ringbuffer"
 )
 
 // Filter implements io.Writer so that it can be passed to a process in place of os.Stdout

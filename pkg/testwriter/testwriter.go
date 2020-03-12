@@ -16,7 +16,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/oneiro-ndev/writers/pkg/linewriter"
+	"github.com/ndau/writers/pkg/linewriter"
 )
 
 // TestWriter wraps a testing.T in a linewriter, calling

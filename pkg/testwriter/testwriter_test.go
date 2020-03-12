@@ -15,7 +15,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oneiro-ndev/writers/pkg/testwriter"
+	"github.com/ndau/writers/pkg/testwriter"
 	"github.com/stretchr/testify/require"
 )
 

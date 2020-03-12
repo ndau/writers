@@ -17,8 +17,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oneiro-ndev/writers/pkg/bufio"
-	"github.com/oneiro-ndev/writers/pkg/ringbuffer"
+	"github.com/ndau/writers/pkg/bufio"
+	"github.com/ndau/writers/pkg/ringbuffer"
 	"github.com/stretchr/testify/assert"
 )
 

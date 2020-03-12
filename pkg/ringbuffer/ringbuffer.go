@@ -14,7 +14,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/oneiro-ndev/writers/pkg/bufio"
+	"github.com/ndau/writers/pkg/bufio"
 )
 
 // RingBuffer is an io.ReadWriter that implements a...you guessed it, ring

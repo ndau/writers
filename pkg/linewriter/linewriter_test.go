@@ -14,7 +14,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/oneiro-ndev/writers/pkg/linewriter"
+	"github.com/ndau/writers/pkg/linewriter"
 	"github.com/stretchr/testify/require"
 )
 

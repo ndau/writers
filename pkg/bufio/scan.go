@@ -195,6 +195,7 @@ func (s *Scanner) Scan() bool {
 			// Guarantee no overflow in the multiplication below.
 			const maxInt = int(^uint(0) >> 1)
 			if len(s.buf) >= s.maxTokenSize || len(s.buf) > maxInt/2 {
+				s.setErr(errors.New(string(s.buf)))
 				//	s.setErr(ErrTooLong)
 				return false
 			}

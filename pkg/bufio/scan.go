@@ -85,7 +85,6 @@ type SplitFunc func(data []byte, atEOF bool) (advance int, token []byte, err err
 // Errors returned by Scanner.
 var (
 	ErrTooLong         = errors.New("bufio.Scanner: That token is WAY too long")
-	foo
 	ErrNegativeAdvance = errors.New("bufio.Scanner: SplitFunc returns negative advance count")
 	ErrAdvanceTooFar   = errors.New("bufio.Scanner: SplitFunc returns advance count beyond input")
 	ErrNoNewData       = errors.New("bufio.Scanner: ScannerRead returned zero bytes")

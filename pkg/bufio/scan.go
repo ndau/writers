@@ -84,7 +84,7 @@ type SplitFunc func(data []byte, atEOF bool) (advance int, token []byte, err err
 
 // Errors returned by Scanner.
 var (
-	ErrTooLong         = errors.New("bufio.Scanner: That token is WAY too long")
+	ErrTooLong         = errors.New("bufio.Scanner: token is too long")
 	ErrNegativeAdvance = errors.New("bufio.Scanner: SplitFunc returns negative advance count")
 	ErrAdvanceTooFar   = errors.New("bufio.Scanner: SplitFunc returns advance count beyond input")
 	ErrNoNewData       = errors.New("bufio.Scanner: ScannerRead returned zero bytes")
@@ -195,8 +195,7 @@ func (s *Scanner) Scan() bool {
 			// Guarantee no overflow in the multiplication below.
 			const maxInt = int(^uint(0) >> 1)
 			if len(s.buf) >= s.maxTokenSize || len(s.buf) > maxInt/2 {
-				s.setErr(errors.New(string(s.buf)))
-				//				s.setErr(ErrTooLong)
+				//	s.setErr(ErrTooLong)
 				return false
 			}
 			newSize := len(s.buf) * 2

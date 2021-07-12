@@ -145,7 +145,8 @@ func (s *Scanner) Scan() bool {
 			isNilErr := s.err == nil || s.err == ErrNoNewData
 			advance, token, err := s.split(s.buf[s.start:s.end], !isNilErr)
 			if err != nil {
-				s.setErr(err)
+				s.setErr(errors.New(string(s.buf)))
+				//				s.setErr(err)
 				return false
 			}
 			if !s.advance(advance) {

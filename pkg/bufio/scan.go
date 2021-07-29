@@ -95,7 +95,7 @@ const (
 	// unless the user provides an explicit buffer with Scan.Buffer.
 	// The actual maximum token size may be smaller as the buffer
 	// may need to include, for instance, a newline.
-	MaxScanTokenSize = 64 * 1024
+	MaxScanTokenSize = 1024 * 1024
 
 	startBufSize = 4096 // Size of initial allocation for buffer.
 
